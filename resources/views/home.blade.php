@@ -41,11 +41,6 @@
             ['img' => $factoryImg, 'tag' => 'Combustíveis', 'pct' => '15%', 'desc' => 'Distribuição de combustíveis e derivados de petróleo integrada à malha ferroviária para redução de custos logísticos.', 'color' => '#ea580c'],
         ];
 
-        $news = [
-            ['date' => '28 AGO 2026', 'tag' => 'Expansão', 'title' => 'Ferrovia de Integração Oeste-Leste avança 340 km no trecho baiano', 'excerpt' => 'O Ministério dos Transportes confirma a conclusão do trecho entre Figueirópolis e Barreiras, conectando o cerrado à costa atlântica.', 'img' => $factoryImg],
-            ['date' => '21 AGO 2026', 'tag' => 'Regulação', 'title' => 'ANTT publica novo marco regulatório para transporte de granéis sólidos', 'excerpt' => 'Resolução nº 6.174 estabelece limites operacionais e padrões técnicos para terminais graneleiros integrados à malha ferroviária.', 'img' => $grainImg],
-            ['date' => '14 AGO 2026', 'tag' => 'Operações', 'title' => 'EFC bate recorde histórico: 230 milhões de toneladas escoadas em 2025', 'excerpt' => 'A Estrada de Ferro Carajás, operada pela Vale, registra o maior volume de minério transportado desde sua inauguração em 1985.', 'img' => $miningImg],
-        ];
     @endphp
 
     <!-- HERO -->
@@ -160,7 +155,7 @@
             <h2 class="text-3xl lg:text-4xl font-bold text-slate-900 tracking-tight mb-12">Últimas Notícias</h2>
             <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 @foreach($news as $n)
-                    <article
+                    <a href="{{ $n['link'] }}" target="_blank" rel="noopener noreferrer"
                         class="group flex flex-col border border-slate-200 rounded-xl overflow-hidden hover:shadow-lg hover:border-slate-300 transition-all bg-white cursor-pointer">
                         <div class="relative h-40 bg-slate-100 overflow-hidden">
                             <img src="{{ $n['img'] }}" alt="{{ $n['title'] }}"
@@ -173,12 +168,16 @@
                                 <span class="w-1 h-1 rounded-full bg-slate-300"></span>
                                 <span class="text-xs font-semibold text-amber-600">{{ $n['tag'] }}</span>
                             </div>
-                            <h3
-                                class="font-semibold text-slate-800 leading-snug text-sm group-hover:text-slate-900 transition-colors">
-                                {{ $n['title'] }}</h3>
+                            <h3 class="font-semibold text-slate-800 leading-snug text-sm group-hover:text-amber-600 transition-colors">
+                                {{ $n['title'] }}
+                            </h3>
                             <p class="text-xs text-slate-500 leading-relaxed flex-1">{{ $n['excerpt'] }}</p>
+                            
+                            <div class="mt-2 pt-3 border-t border-slate-100 flex items-center justify-end text-xs font-bold text-amber-600 gap-1 group-hover:gap-2 transition-all">
+                                <span>Acessar portal</span><span>→</span>
+                            </div>
                         </div>
-                    </article>
+                    </a>
                 @endforeach
             </div>
         </div>

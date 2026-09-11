@@ -11,7 +11,35 @@ class SimController extends Controller
     // TELAS
     public function index()
     {
-        return view('home');
+        // Busca notícias reais do Google News sobre ferrovias no Brasil
+        $url = "https://news.google.com/rss/search?q=ferrovia+logistica+brasil&hl=pt-BR&gl=BR&ceid=BR:pt-419";
+        
+        // Suprime erros caso a internet oscile (fallback) para não quebrar a home
+        $xml = @simplexml_load_file($url);
+        
+        $noticias = [];
+        $contador = 0;
+
+        // Se o XML carregar com sucesso, formata as 3 primeiras notícias
+        if ($xml && isset($xml->channel->item)) {
+            foreach ($xml->channel->item as $item) {
+                if ($contador >= 3) break;
+                
+                $noticias[] = [
+                    'title' => (string) $item->title,
+                    // Limpa o HTML nativo do RSS e limita a 100 caracteres
+                    'excerpt' => \Illuminate\Support\Str::limit(strip_tags((string) $item->description), 100),
+                    'date' => strtoupper(\Carbon\Carbon::parse((string) $item->pubDate)->translatedFormat('d M Y')),
+                    'tag' => 'Mercado',
+                    'link' => (string) $item->link,
+                    // Imagem genérica para manter o design consistente
+                    'img' => 'https://images.unsplash.com/photo-1659291457360-13ef34276765?w=800&h=500&fit=crop&auto=format'
+                ];
+                $contador++;
+            }
+        }
+
+        return view('home', ['news' => $noticias]); 
     }
 
     public function simulador()
