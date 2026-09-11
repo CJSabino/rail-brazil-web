@@ -9,25 +9,29 @@ use App\Models\TarifaRegulada;
 class SimController extends Controller
 {
     // TELAS
-    public function index() {
-        return view('home'); 
+    public function index()
+    {
+        return view('home');
     }
 
-    public function simulador() {
-        return view('simulador'); 
+    public function simulador()
+    {
+        return view('simulador');
     }
 
-    public function metodologia() {
+    public function metodologia()
+    {
         return view('metodologia');
     }
 
     // --- MÉTODOS DE API ---
 
-    public function calcularFrete(Request $request) {
+    public function calcularFrete(Request $request)
+    {
         $distanciaTotal = $request->input('distanciaKm');
         $concessionaria = $request->input('concessionaria');
-        $mercadoria     = $request->input('mercadoria');
-        $toneladas      = $request->input('toneladas');
+        $mercadoria = $request->input('mercadoria');
+        $toneladas = $request->input('toneladas');
 
         $faixas = TarifaRegulada::where('concessionaria', $concessionaria)
             ->where('mercadoria', $mercadoria)
@@ -48,8 +52,8 @@ class SimController extends Controller
 
         foreach ($faixas as $faixa) {
             $inicio = $faixa->km_inicial;
-            $fim    = $faixa->km_final;
-            
+            $fim = $faixa->km_final;
+
             if ($distanciaTotal >= $inicio || $inicio == 0) {
                 $limiteInferior = ($inicio == 0) ? 0 : $inicio - 1;
                 $kmNestaFaixa = min($distanciaTotal, $fim) - $limiteInferior;
@@ -59,8 +63,8 @@ class SimController extends Controller
 
         $tarifaUnitaria = $parcelaFixa + $custoVariavelTotal;
         $custoFreteTotal = $tarifaUnitaria * $toneladas;
-        
-        $economia = $custoFreteTotal * 0.38; 
+
+        $economia = $custoFreteTotal * 0.38;
         $consumoLitros = (($distanciaTotal * $toneladas) / 1000) * 3.33;
 
         return response()->json([
@@ -73,14 +77,16 @@ class SimController extends Controller
     // INTEGRAÇÕES COM SUPABASE 
 
     private $supaKey;
-	private $supaUrl;
+    private $supaUrl;
 
-	public function __construct() {
-    $this->supaKey = env('SUPABASE_KEY');
-    $this->supaUrl = env('SUPABASE_URL');
-}
+    public function __construct()
+    {
+        $this->supaKey = env('SUPABASE_KEY');
+        $this->supaUrl = env('SUPABASE_URL');
+    }
 
-    public function getTerminais() {
+    public function getTerminais()
+    {
         $response = Http::withHeaders([
             'apikey' => $this->supaKey,
             'Authorization' => 'Bearer ' . $this->supaKey
@@ -89,7 +95,8 @@ class SimController extends Controller
         return response($response->body())->header('Content-Type', 'application/json');
     }
 
-    public function getRota(Request $request) {
+    public function getRota(Request $request)
+    {
         $lat1 = $request->input('lat1');
         $lng1 = $request->input('lng1');
         $lat2 = $request->input('lat2');
@@ -102,12 +109,12 @@ class SimController extends Controller
 
         //Pega nó de origem
         $nodeStart = Http::withHeaders($headers)
-            ->post($this->supaUrl . 'rpc/get_nearest_node', ['lat' => (float)$lat1, 'lng' => (float)$lng1])
+            ->post($this->supaUrl . 'rpc/get_nearest_node', ['lat' => (float) $lat1, 'lng' => (float) $lng1])
             ->json();
 
         //Pega nó de destino
         $nodeEnd = Http::withHeaders($headers)
-            ->post($this->supaUrl . 'rpc/get_nearest_node', ['lat' => (float)$lat2, 'lng' => (float)$lng2])
+            ->post($this->supaUrl . 'rpc/get_nearest_node', ['lat' => (float) $lat2, 'lng' => (float) $lng2])
             ->json();
 
         if (!is_numeric($nodeStart) || !is_numeric($nodeEnd)) {
@@ -117,22 +124,23 @@ class SimController extends Controller
         //Calcula a Rota
         $rota = Http::withHeaders($headers)
             ->post($this->supaUrl . 'rpc/get_rail_route', [
-                'source_id' => (int)$nodeStart,
-                'target_id' => (int)$nodeEnd
+                'source_id' => (int) $nodeStart,
+                'target_id' => (int) $nodeEnd
             ])->json();
 
         return response()->json($rota);
     }
 
-    public function getMalha() {
+    public function getMalha()
+    {
         $dados = Http::withHeaders([
             'apikey' => $this->supaKey,
             'Authorization' => 'Bearer ' . $this->supaKey
         ])->get($this->supaUrl . "malha_ferroviaria?select=linha,concessionaria,bitola,sentido,uf,geom")
-          ->json();
-        
+            ->json();
+
         $featuresArray = [];
-        
+
         //Verifica se o Supabase devolveu um array válido antes de montar o GeoJSON
         if (is_array($dados)) {
             foreach ($dados as $item) {
@@ -140,11 +148,11 @@ class SimController extends Controller
                     $featuresArray[] = [
                         "type" => "Feature",
                         "properties" => [
-                            "linha"          => $item['linha'] ?? 'Sem Nome',
+                            "linha" => $item['linha'] ?? 'Sem Nome',
                             "concessionaria" => trim($item['concessionaria'] ?? 'N/A'),
-                            "bitola"         => $item['bitola'] ?? 'N/A',
-                            "sentido"        => $item['sentido'] ?? 'N/A',
-                            "uf"             => $item['uf'] ?? ''
+                            "bitola" => $item['bitola'] ?? 'N/A',
+                            "sentido" => $item['sentido'] ?? 'N/A',
+                            "uf" => $item['uf'] ?? ''
                         ],
                         "geometry" => $item['geom']
                     ];
