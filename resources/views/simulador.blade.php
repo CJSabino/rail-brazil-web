@@ -153,31 +153,38 @@
 
                     <!-- Overlay Bottom Right -->
                     <div
-                        class="absolute bottom-6 right-6 z-[1000] rounded-xl bg-white/95 backdrop-blur-sm border border-slate-200 p-4 shadow-lg pointer-events-auto">
-                        <div class="text-[10px] font-mono text-slate-400 uppercase tracking-widest mb-3">Concessionárias
-                        </div>
-                        <div class="space-y-2">
-                            <div class="flex items-center gap-2">
-                                <div class="w-6 h-0.5" style="background:#dc2626; box-shadow:0 0 4px #dc262666"></div><span
-                                    class="text-xs text-slate-600">VALE (EFC/EFVM)</span>
-                            </div>
-                            <div class="flex items-center gap-2">
-                                <div class="w-6 h-0.5" style="background:#f59e0b; box-shadow:0 0 4px #f59e0b66"></div><span
-                                    class="text-xs text-slate-600">Rumo Logística</span>
-                            </div>
-                            <div class="flex items-center gap-2">
-                                <div class="w-6 h-0.5" style="background:#10b981; box-shadow:0 0 4px #10b98166"></div><span
-                                    class="text-xs text-slate-600">MRS</span>
-                            </div>
-                            <div class="flex items-center gap-2">
-                                <div class="w-6 h-0.5" style="background:#8b5cf6; box-shadow:0 0 4px #8b5cf666"></div><span
-                                    class="text-xs text-slate-600">VLI / FCA</span>
-                            </div>
-                            <div class="flex items-center gap-2">
-                                <div class="w-6 h-0.5" style="background:#2563eb; box-shadow:0 0 4px #2563eb66"></div><span
-                                    class="text-xs text-slate-600">Transnordestina</span>
-                            </div>
-                        </div>
+                        class="absolute bottom-8 right-6 z-[1000] bg-white/95 backdrop-blur-sm p-4 rounded-xl shadow-lg border border-slate-200">
+                        <h3 class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-3">Concessionárias</h3>
+                        <ul class="flex flex-col gap-2">
+                            <!-- Grupo Rumo -->
+                            <li class="flex items-center gap-2">
+                                <span class="w-4 h-1 rounded-full bg-[#f59e0b]"></span>
+                                <span class="text-xs font-medium text-slate-700">Rumo (Paulista)</span>
+                            </li>
+                            <li class="flex items-center gap-2">
+                                <span class="w-4 h-1 rounded-full bg-[#d97706]"></span>
+                                <span class="text-xs font-medium text-slate-700">Rumo (Sul/Norte/Oeste)</span>
+                            </li>
+                            <!-- Grupo Vale -->
+                            <li class="flex items-center gap-2">
+                                <span class="w-4 h-1 rounded-full bg-[#dc2626]"></span>
+                                <span class="text-xs font-medium text-slate-700">EFC / EFVM (Vale)</span>
+                            </li>
+                            <!-- Grupo VLI -->
+                            <li class="flex items-center gap-2">
+                                <span class="w-4 h-1 rounded-full bg-[#8b5cf6]"></span>
+                                <span class="text-xs font-medium text-slate-700">FCA / FNS (VLI)</span>
+                            </li>
+                            <!-- Independentes -->
+                            <li class="flex items-center gap-2">
+                                <span class="w-4 h-1 rounded-full bg-[#10b981]"></span>
+                                <span class="text-xs font-medium text-slate-700">MRS Logística</span>
+                            </li>
+                            <li class="flex items-center gap-2">
+                                <span class="w-4 h-1 rounded-full bg-[#2563eb]"></span>
+                                <span class="text-xs font-medium text-slate-700">FTL (Transnordestina)</span>
+                            </li>
+                        </ul>
                     </div>
                 </div>
             </div>
@@ -351,12 +358,30 @@
 
         const state = { pontos: [], nomes: [], tipoOrigem: null, camadaRota: null, camadaTerminais: null, isProcessando: false, ultimoData: null };
 
+        // Paleta de concessionárias para o Leaflet
         const coresMalha = {
-            'RMN': '#f59e0b', 'RMO': '#f59e0b', 'RMP': '#f59e0b', 'RMS': '#f59e0b',
-            'EFC': '#dc2626', 'EFVM': '#dc2626',
-            'FCA': '#8b5cf6', 'FNS': '#8b5cf6',
-            'MRS': '#10b981', 'FTL': '#2563eb',
-            'DEFAULT': '#94a3b8'
+            // Rumo )
+            'RMP': '#d97706', // amber-600 
+            'RMS': '#ea580c', // orange-600
+            'RMN': '#c2410c', // orange-700
+            'RMO': '#9a3412', // orange-800
+            'RMC': '#b45309', // amber-700
+
+            // Vale
+            'EFC': '#dc2626', // red-600
+            'EFVM': '#991b1b', // red-800
+
+            // VLI 
+            'FCA': '#7c3aed', // violet-600
+            'FNS': '#4338ca', // indigo-700
+
+            // Independentes 
+            'MRS': '#059669', // emerald-600
+            'FTL': '#2563eb', // blue-600
+            'FTC': '#0891b2', // cyan-600
+            'EFPO': '#65a30d', // lime-600
+
+            'DEFAULT': '#475569' // slate-600
         };
 
         // Dicionário centralizado de categorias
@@ -452,7 +477,12 @@
                 fetch('/api/malha').then(r => r.json()).then(data => {
                     if (!data || !data.features) return;
                     L.geoJSON(data, {
-                        style: (f) => ({ color: coresMalha[f.properties.concessionaria?.toUpperCase()] || coresMalha.DEFAULT, weight: 2.5, opacity: 0.4, lineCap: 'round' })
+                        style: (f) => ({
+                            color: coresMalha[f.properties.concessionaria?.toUpperCase()] || coresMalha.DEFAULT,
+                            weight: 3.5,
+                            opacity: 0.9,
+                            lineCap: 'round'
+                        })
                     }).addTo(map);
                 });
 
