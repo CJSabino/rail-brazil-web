@@ -24,4 +24,3 @@
     * Abra o arquivo e insira suas credenciais do Supabase (SUPABASE_URL, SUPABASE_KEY).
 
 ---
-Desenvolvido por **Cauã Sabino**
