@@ -13,18 +13,19 @@ class SimController extends Controller
     {
         // Busca notícias reais do Google News sobre ferrovias no Brasil
         $url = "https://news.google.com/rss/search?q=ferrovia+logistica+brasil&hl=pt-BR&gl=BR&ceid=BR:pt-419";
-        
+
         // Suprime erros caso a internet oscile (fallback) para não quebrar a home
         $xml = @simplexml_load_file($url);
-        
+
         $noticias = [];
         $contador = 0;
 
         // Se o XML carregar com sucesso, formata as 3 primeiras notícias
         if ($xml && isset($xml->channel->item)) {
             foreach ($xml->channel->item as $item) {
-                if ($contador >= 3) break;
-                
+                if ($contador >= 3)
+                    break;
+
                 $noticias[] = [
                     'title' => (string) $item->title,
                     // Limpa o HTML nativo do RSS e limita a 100 caracteres
@@ -39,7 +40,7 @@ class SimController extends Controller
             }
         }
 
-        return view('home', ['news' => $noticias]); 
+        return view('home', ['news' => $noticias]);
     }
 
     public function simulador()
@@ -62,13 +63,23 @@ class SimController extends Controller
         $toneladas = $request->input('toneladas');
 
         $faixas = TarifaRegulada::where('concessionaria', $concessionaria)
-            ->where('mercadoria', $mercadoria)
+            ->whereRaw('LOWER(mercadoria) = ?', [strtolower($mercadoria)])
             ->where('tipo_tarifa', 'TETO_ANTT')
             ->orderBy('km_inicial', 'ASC')
             ->get();
 
+        // SE NÃO ENCONTRAR FAIXAS PARA A MERCADORIA, USA A TARIFA TETO DE "DEMAIS PRODUTOS"
         if ($faixas->isEmpty()) {
-            return response()->json(['erro' => 'Tarifa não encontrada para esta rota/carga.']);
+            $faixas = TarifaRegulada::where('concessionaria', $concessionaria)
+                ->whereRaw('LOWER(mercadoria) = ?', ['demais produtos'])
+                ->where('tipo_tarifa', 'TETO_ANTT')
+                ->orderBy('km_inicial', 'ASC')
+                ->get();
+        }
+
+        // Se ainda assim for vazio, retorna indisponível
+        if ($faixas->isEmpty()) {
+            return response()->json(['erro' => 'Tarifa Indisponível']);
         }
 
         $custoVariavelTotal = 0;

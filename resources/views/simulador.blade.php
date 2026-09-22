@@ -227,27 +227,37 @@
                         <select id="input-tipo-carga" onchange="seRotaProntaRecalcular()"
                             class="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2.5 text-slate-800 text-sm focus:ring-2 focus:ring-amber-500 focus:border-amber-500 outline-none cursor-pointer transition-all">
                             <option value="" disabled selected>Selecione o produto...</option>
-                            <optgroup label="Minérios e Siderurgia">
-                                <option value="Calcário Siderúrgico">Calcário Siderúrgico</option>
-                                <option value="Carvão Mineral">Carvão Mineral</option>
-                                <option value="Ferro Gusa">Ferro Gusa</option>
-                            </optgroup>
+
                             <optgroup label="Agrícolas e Alimentícios">
-                                <option value="Açúcar">Açúcar</option>
-                                <option value="Grãos e Farelos">Grãos e Farelos</option>
+                                <option value="Soja">Soja em Grão</option>
+                                <option value="Farelo de Soja">Farelo de Soja</option>
                                 <option value="Milho">Milho</option>
+                                <option value="Trigo">Trigo</option>
+                                <option value="Açúcar">Açúcar</option>
                                 <option value="Óleo Vegetal">Óleo Vegetal</option>
+                                <option value="Adubos e Fertilizantes">Adubos e Fertilizantes</option>
                             </optgroup>
+
+                            <optgroup label="Minérios e Siderurgia">
+                                <option value="Ferro Gusa">Ferro Gusa</option>
+                                <option value="Minério de Ferro">Minério de Ferro</option>
+                                <option value="Produtos Siderúrgicos">Produtos Siderúrgicos (Bobinas/Aço)</option>
+                                <option value="Calcário Siderúrgico">Calcário Siderúrgico</option>
+                                <option value="Escória">Escória de Alto Forno</option>
+                            </optgroup>
+
                             <optgroup label="Combustíveis">
-                                <option value="Combustíveis">Combustíveis (Diesel/Gasolina)</option>
+                                <option value="Óleo Diesel">Óleo Diesel</option>
+                                <option value="Gasolina">Gasolina</option>
                                 <option value="Álcool">Álcool / Etanol</option>
                             </optgroup>
-                            <optgroup label="Materiais de Construção">
-                                <option value="Cimento, Cal e Clínquer">Cimento, Cal e Clínquer</option>
-                            </optgroup>
-                            <optgroup label="Outros">
-                                <option value="Contêiner Cheio de 20 pés">Contêineres</option>
-                                <option value="Demais Produtos">Carga Geral</option>
+
+                            <optgroup label="Outros / Carga Geral">
+                                <option value="Celulose">Celulose</option>
+                                <option value="Cimento Acondicionado">Cimento Acondicionado</option>
+                                <option value="Contêiner Cheio de 20 pés">Contêiner Cheio (20 pés)</option>
+                                <option value="Veículos">Veículos</option>
+                                <option value="Demais Produtos">Carga Geral (Demais Produtos)</option>
                             </optgroup>
                         </select>
                     </div>
@@ -386,88 +396,86 @@
 
         // Dicionário centralizado de categorias
         const DICIONARIO_CARGAS = {
-            "MINÉRIO": ['MINÉRIO', 'MINERIO', 'MIN. FERRO', 'BAUXITA'],
-            "SIDERURGIA": ['SIDERURG', 'FIO M', 'GUSA', 'ESCÓRIA', 'VERGALHÃO', 'AÇO'],
-            "CARVÃO": ['CARVÃO', 'CARVAO', 'COQUE', 'ANTRACITO'],
-            "COMBUSTÍVEIS": ['DIESEL', 'GASOLINA', 'S500', 'ETANOL', 'ÓLEO COMBUST'],
-            "QUÍMICOS": ['ENXOFRE', 'ÁCIDO', 'AMÔNIA'],
-            "GRÃOS": ['SOJA', 'MILHO', 'TRIGO', 'CEVADA', 'FARELO'],
-            "AÇÚCAR": ['AÇÚCAR', 'ACUCAR'],
-            "FERTILIZANTES": ['FERTILIZANTE', 'CLORETO', 'POTÁSSIO', 'ADUBO'],
-            "ÓLEO VEGETAL": ['ÓLEO VEGETAL', 'OLEO VEGETAL'],
-            "FLORESTAL": ['CELULOSE', 'MADEIRA', 'TORAS'],
-            "CONSTRUÇÃO": ['CIMENTO', 'CLÍNQUER', 'CLINQUER', 'AREIA', 'CAL'],
-            "ROCHAS": ['GRANITO', 'BLOCO', 'DUNITO', 'PEDRA'],
-            "CONTÊINERES": ['CONTAINER', 'CONTÊINER', 'CNTR'],
-            "CARGA GERAL": ['ENSACADO', 'CARGA GERAL', 'DIVERSOS']
+            "Açúcar": ["AÇÚCAR", "ACUCAR"],
+            "Milho": ["MILHO"],
+            "Grãos e Farelos": ["SOJA", "TRIGO", "CEVADA", "FARELO", "GRÃO", "GRAO", "MALTE"],
+            "Óleo Vegetal": ["ÓLEO VEGETAL", "OLEO VEGETAL"],
+            "Álcool": ["ÁLCOOL", "ALCOOL", "ETANOL", "ANIDRO"],
+            "Combustíveis": ["DIESEL", "GASOLINA", "S10", "S500", "B7", "B100", "BIODIESEL", "PETRÓLEO", "PETROLEO", "ÓLEO COMBUSTÍVEL", "OLEO COMBUST"],
+            "Carvão Mineral": ["CARVÃO", "CARVAO", "COQUE", "ANTRACITO"],
+            "Ferro Gusa": ["GUSA"],
+            "Calcário Siderúrgico": ["CALCÁRIO", "CALCARIO"],
+            "Cimento, Cal e Clínquer": ["CIMENTO", "CLÍNQUER", "CLINQUER", "CAL"],
+            "Contêiner Cheio de 20 pés": ["CONTAINER", "CONTÊINER", "CONTEINER", "CNTR"],
+            // TUDO que for minério, siderurgia, madeira ou fertilizante que não tem tarifa específica, cai na regra geral:
+            "Demais Produtos": ["MINÉRIO", "MINERIO", "SIDERÚRGICO", "SIDERURGICO", "AREIA", "BAUXITA", "CELULOSE", "MADEIRA", "FERTILIZANTE", "FOSFATO", "SAL", "UREIA", "SUCATA", "BOBINA", "VERGALHÃO", "ENXOFRE"]
         };
 
+        //Função de categorização direta
         function categorizarTerminal(tipoBruto) {
-            if (!tipoBruto) return "OUTROS";
+            if (!tipoBruto) return "Demais Produtos";
             const termo = tipoBruto.toUpperCase();
 
-            // Percorre o dicionário buscando a primeira compatibilidade
-            for (const [categoria, palavrasChave] of Object.entries(DICIONARIO_CARGAS)) {
+            // Procura a palavra-chave. Se achar, retorna exatamente o nome do Option do Select
+            for (const [categoria_antt, palavrasChave] of Object.entries(DICIONARIO_CARGAS)) {
                 if (palavrasChave.some(palavra => termo.includes(palavra))) {
-                    return categoria;
+                    return categoria_antt;
                 }
             }
-
-            return "OUTROS";
+            return "Demais Produtos"; // Fallback seguro
         }
 
+        // Auto-selecionar no painel sem intermediários
         function autoSelecionarCarga(tipoBruto) {
-            const familia = categorizarTerminal(tipoBruto);
+            const cargaExata = categorizarTerminal(tipoBruto);
             const selectCarga = document.getElementById('input-tipo-carga');
-            const deParaANTT = {
-                "MINÉRIO": "Demais Produtos", "SIDERURGIA": "Ferro Gusa", "CARVÃO": "Carvão Mineral",
-                "COMBUSTÍVEIS": "Combustíveis", "QUÍMICOS": "Demais Produtos", "GRÃOS": "Grãos e Farelos",
-                "AÇÚCAR": "Açúcar", "FERTILIZANTES": "Demais Produtos", "ÓLEO VEGETAL": "Óleo Vegetal",
-                "FLORESTAL": "Demais Produtos", "CONSTRUÇÃO": "Cimento, Cal e Clínquer", "ROCHAS": "Demais Produtos",
-                "CONTÊINERES": "Contêiner Cheio de 20 pés", "CARGA GERAL": "Demais Produtos", "OUTROS": "Demais Produtos"
-            };
-            const cargaEscolhida = deParaANTT[familia];
-            if (cargaEscolhida) {
-                selectCarga.value = cargaEscolhida;
+
+            if (cargaExata && selectCarga) {
+                selectCarga.value = cargaExata;
+                // Força o frontend a recalcular o frete
                 selectCarga.dispatchEvent(new Event('change'));
             }
         }
 
         function gerarTagsCarga(tipoBruto) {
-            if (!tipoBruto || tipoBruto.trim() === '' || tipoBruto === 'Geral') return '<span class="text-xs text-slate-500 font-medium">Carga Geral</span>';
+            if (!tipoBruto || tipoBruto.trim() === '') return '<span class="text-xs text-slate-500 font-medium">Carga Geral</span>';
 
-            // Separa os tipos de carga caso venham separados por vírgula ou barra no banco de dados
-            const tipos = tipoBruto.split(/[,/]+/).map(t => t.trim()).filter(t => t.length > 0);
+            // Separa os nomes misturados
+            const tipos = tipoBruto.split(/[,/]+/).map(t => t.trim()).filter(t => t.length > 0 && t.length <= 25);
 
-            let html = '<span class="text-[11px] text-slate-400 mr-1.5">Aceita:</span>';
+            let html = '<span class="text-[11px] text-slate-400 mr-1.5 flex flex-wrap gap-1 items-center">Aceita: ';
 
-            tipos.forEach(t => {
-                let cor = 'text-slate-500';
+            tipos.slice(0, 3).forEach(t => { // Limita a 3 tags para não quebrar o layout
+                let cor = 'text-slate-500 bg-slate-100';
                 const up = t.toUpperCase();
 
-                if (up.includes('SOJA') || up.includes('GRÃO') || up.includes('MILHO')) cor = 'text-lime-500';
-                else if (up.includes('AÇÚCAR') || up.includes('ACUCAR')) cor = 'text-amber-500';
-                else if (up.includes('COMBUST') || up.includes('DIESEL')) cor = 'text-orange-500';
-                else if (up.includes('MINÉR') || up.includes('FERRO')) cor = 'text-slate-700';
-                else if (up.includes('CONT') || up.includes('CNTR')) cor = 'text-blue-500';
+                if (up.includes('SOJA') || up.includes('GRÃO') || up.includes('MILHO')) cor = 'text-lime-700 bg-lime-100';
+                else if (up.includes('AÇÚCAR') || up.includes('ACUCAR')) cor = 'text-amber-700 bg-amber-100';
+                else if (up.includes('DIESEL') || up.includes('S10') || up.includes('GASOLINA')) cor = 'text-orange-700 bg-orange-100';
+                else if (up.includes('MINÉR') || up.includes('FERRO')) cor = 'text-slate-700 bg-slate-200';
+                else if (up.includes('CONT') || up.includes('CNTR')) cor = 'text-blue-700 bg-blue-100';
 
-                html += `<span class="text-[11px] ${cor} font-bold mr-1.5">${t}</span>`;
+                html += `<span class="px-1.5 py-0.5 rounded ${cor} font-bold text-[10px] uppercase">${t}</span>`;
             });
 
+            html += '</span>';
             return html;
         }
 
+        // Filtro de Mapa
         function filtrarTerminaisCompativeis(tipoOrigem, layerOrigem) {
             state.camadaTerminais.eachLayer(layer => {
                 if (layer === layerOrigem) return;
-                const tipoDestino = layer.feature.properties.Tipo || "Geral";
-                const familiaOrigem = categorizarTerminal(tipoOrigem);
-                const familiaDestino = categorizarTerminal(tipoDestino);
 
-                if (familiaDestino === familiaOrigem) {
-                    layer.setStyle({ fillColor: "#f59e0b", color: "#ffffff", radius: 6, opacity: 1, fillOpacity: 1 });
+                // Pega a coluna correta do seu CSV/Banco
+                const tipoDestino = layer.feature.properties.Tipo || layer.feature.properties.tipo || layer.feature.properties.TIPO || "Desconhecido";
+
+                // Se a origem e o destino caírem na mesma categoria do seu Select, eles são compatíveis
+                if (categorizarTerminal(tipoDestino) === categorizarTerminal(tipoOrigem)) {
+                    layer.setStyle({ fillColor: "#fde047", color: "#0f172a", weight: 2, radius: 7, opacity: 1, fillOpacity: 1 });
+                    layer.bringToFront();
                 } else {
-                    layer.setStyle({ fillColor: "#cbd5e1", color: "#f8fafc", radius: 4, opacity: 0.5, fillOpacity: 0.5 });
+                    layer.setStyle({ fillColor: "#f1f5f9", color: "#cbd5e1", weight: 1, radius: 4, opacity: 0.4, fillOpacity: 0.4 });
                 }
             });
         }
@@ -519,7 +527,7 @@
             if (state.pontos.length === 1) {
                 layer.setStyle({ fillColor: '#0f172a', radius: 8, weight: 2 });
                 layer.bringToFront();
-                filtrarTerminaisCompativeis(tipo, layer);
+                //filtrarTerminaisCompativeis(tipo, layer);
                 autoSelecionarCarga(tipo);
 
                 //Atualiza a Origem na tela
