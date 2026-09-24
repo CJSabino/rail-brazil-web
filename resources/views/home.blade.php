@@ -137,7 +137,8 @@
                             <div class="absolute top-3 left-3 px-2.5 py-1 rounded text-xs font-semibold text-white"
                                 style="background: {{ $item['color'] }}cc">{{ $item['tag'] }}</div>
                             <div class="absolute bottom-3 right-3 font-bold text-3xl text-white font-mono drop-shadow">
-                                {{ $item['pct'] }}</div>
+                                {{ $item['pct'] }}
+                            </div>
                         </div>
                         <div class="p-4 bg-white">
                             <p class="text-sm text-slate-500 leading-relaxed">{{ $item['desc'] }}</p>
@@ -168,12 +169,14 @@
                                 <span class="w-1 h-1 rounded-full bg-slate-300"></span>
                                 <span class="text-xs font-semibold text-amber-600">{{ $n['tag'] }}</span>
                             </div>
-                            <h3 class="font-semibold text-slate-800 leading-snug text-sm group-hover:text-amber-600 transition-colors">
+                            <h3
+                                class="font-semibold text-slate-800 leading-snug text-sm group-hover:text-amber-600 transition-colors">
                                 {{ $n['title'] }}
                             </h3>
                             <p class="text-xs text-slate-500 leading-relaxed flex-1">{{ $n['excerpt'] }}</p>
-                            
-                            <div class="mt-2 pt-3 border-t border-slate-100 flex items-center justify-end text-xs font-bold text-amber-600 gap-1 group-hover:gap-2 transition-all">
+
+                            <div
+                                class="mt-2 pt-3 border-t border-slate-100 flex items-center justify-end text-xs font-bold text-amber-600 gap-1 group-hover:gap-2 transition-all">
                                 <span>Acessar portal</span><span>→</span>
                             </div>
                         </div>
@@ -275,9 +278,9 @@
                 },
                 onEachFeature: function (feature, layer) {
                     layer.bindPopup(`<div style="font-family: Inter, sans-serif;">
-                            <b style="color: #0f172a; font-size: 14px;">${feature.properties.linha || 'Trecho Ferroviário'}</b><br>
-                            <span style="color: #64748b; font-size: 12px;">Operador: ${feature.properties.concessionaria}</span>
-                        </div>`);
+                                <b style="color: #0f172a; font-size: 14px;">${feature.properties.linha || 'Trecho Ferroviário'}</b><br>
+                                <span style="color: #64748b; font-size: 12px;">Operador: ${feature.properties.concessionaria}</span>
+                            </div>`);
 
                     // Efeito Hover
                     layer.on('mouseover', function () { this.setStyle({ weight: 6, opacity: 1 }); });

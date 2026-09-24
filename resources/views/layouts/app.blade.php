@@ -4,11 +4,16 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Rail Brazil - @yield('titulo')</title>
+    <meta name="csrf-token" content="{{ csrf_token() }}">
+
+    <title>Rail Brazil - @yield('titulo', 'Simulador')</title>
+
     <link rel="stylesheet" href="{{ asset('css/estilos.css') }}">
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    @vite(['resources/css/app.css', 'resources/js/app.js'])
+
     @yield('css')
 </head>
 
@@ -17,7 +22,7 @@
     <!-- HEADER -->
     <header id="main-header"
         class="fixed top-0 left-0 right-0 z-50 transition-all duration-300 bg-white/95 backdrop-blur border-b border-slate-200 shadow-sm">
-        <div class="max-w-7xl mx-auto px-6 flex items-center justify-between h-6">
+        <div class="max-w-7xl mx-auto px-6 flex items-center justify-between h-8">
 
             <!-- Logo -->
             <div class="flex items-center gap-3">
@@ -46,16 +51,39 @@
                     class="text-sm font-medium text-slate-600 hover:text-amber-600 transition-colors">Informações</a>
             </nav>
 
-            <!-- Ações -->
+            <!-- Ações / Autenticação -->
             <div class="hidden lg:flex items-center gap-4">
-                <div class="flex items-center gap-2 text-slate-500">
-                    <i data-lucide="phone" class="w-4 h-4"></i>
-                    <span class="text-sm font-mono">(14) 99999-9999</span>
-                </div>
-                <a href="https://wa.me/5514123456789"
-                    class="bg-amber-500 hover:bg-amber-400 text-slate-900 px-5 py-2 rounded-lg text-sm font-bold transition-colors">
-                    Fale Conosco
-                </a>
+                @auth
+                    <div class="flex items-center gap-4">
+                        <div class="flex items-center gap-2 text-slate-700">
+                            <i data-lucide="user" class="w-4 h-4 text-amber-500"></i>
+                            <span class="text-sm font-bold">Olá, {{ Auth::user()->name }}</span>
+                        </div>
+
+                        <!-- BOTÃO DE PERFIL -->
+                        <a href="{{ route('profile.edit') }}"
+                            class="text-sm font-medium text-slate-500 hover:text-amber-600 transition-colors">Meu Perfil</a>
+
+                        <a href="{{ route('dashboard') }}"
+                            class="text-sm font-medium text-slate-500 hover:text-amber-600 transition-colors">Dashboard</a>
+
+                        <form method="POST" action="{{ route('logout') }}" class="inline">
+                            @csrf
+                            <button type="submit"
+                                class="text-sm font-medium text-red-500 hover:text-red-700 transition-colors">Sair</button>
+                        </form>
+                    </div>
+                @else
+                    <!-- Se for Visitante -->
+                    <div class="flex items-center gap-3">
+                        <a href="{{ route('login') }}"
+                            class="text-sm font-bold text-slate-600 hover:text-amber-600 transition-colors">Entrar</a>
+                        <a href="{{ route('register') }}"
+                            class="bg-amber-500 hover:bg-amber-400 text-slate-900 px-5 py-2 rounded-lg text-sm font-bold transition-colors">
+                            Criar Conta
+                        </a>
+                    </div>
+                @endauth
             </div>
 
             <!-- Botão Mobile -->
@@ -67,6 +95,10 @@
 
     <!-- CONTEÚDO  -->
     <main class="flex-grow pt-16">
+        <!-- O Breeze vai renderizar as telas de Login/Register aqui dentro -->
+        {{ $slot ?? '' }}
+
+        <!-- vai renderizar a Home e o Simulador aqui dentro -->
         @yield('conteudo')
     </main>
 
@@ -113,7 +145,6 @@
             <div class="pt-8 border-t border-slate-100 flex flex-col md:flex-row items-center justify-between gap-4">
                 <small class="text-xs text-slate-400 font-mono">© 2026 Rail Brazil — Todos os direitos
                     reservados</small>
-
                 <nav aria-label="Links de política">
                     <ul class="flex items-center gap-6 text-xs text-slate-400 font-mono">
                         <li><a href="#" class="hover:text-slate-600 transition-colors">Política de privacidade</a></li>

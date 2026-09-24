@@ -266,8 +266,8 @@
                         <label class="text-slate-500 font-semibold text-xs mb-1.5 block">Volume (Toneladas)</label>
                         <div
                             class="flex items-center bg-slate-50 border border-slate-200 rounded-lg px-4 py-2 focus-within:ring-2 focus-within:ring-amber-500 transition-all">
-                            <input type="number" id="input-carga" value="5000"
-                                class="bg-transparent w-full text-xl font-bold text-slate-800 outline-none"
+                            <input type="number" id="input-carga" value="500"
+                                class="bg-transparent w-full text-xl font-bold text-slate-800 outline-none border-none focus:ring-0 p-0"
                                 onchange="seRotaProntaRecalcular()">
                             <span class="text-slate-400 font-bold ml-2 text-sm">TU</span>
                         </div>
