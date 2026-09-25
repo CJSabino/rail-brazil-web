@@ -6,7 +6,7 @@
 ## Tecnologias Utilizadas
 * **Back-end:** PHP(Laravel).
 * **Banco de Dados:** PostgreSQL (Supabase).
-* **Front-end:** HTML5, TailwindCSS.
+* **Front-end:** Leaflet, TailwindCSS.
 
 ## Como Rodar o Projeto
 
