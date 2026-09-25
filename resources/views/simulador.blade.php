@@ -13,7 +13,7 @@
 
         #map-container {
             position: relative;
-            height: 750px;
+            height: 85vh;
             border-radius: 1rem;
             overflow: hidden;
             box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
@@ -130,16 +130,33 @@
                     <!-- Div do Leaflet -->
                     <div id="map" class="bg-[#e5e7eb]"></div>
 
-                    <!-- Overlay Top (Informativo) -->
+                    <!-- Overlay Top (Informativo e Ações) -->
                     <div
-                        class="absolute top-0 left-0 right-0 z-[1000] p-4 bg-gradient-to-b from-black/20 to-transparent pointer-events-none">
-                        <div
-                            class="inline-flex items-center gap-3 px-4 py-1.5 rounded-full bg-white border border-slate-200 shadow-sm pointer-events-none">
-                            <div class="flex items-center gap-1.5">
-                                <div class="w-1.5 h-1.5 rounded-full bg-emerald-500"></div>
-                                <span class="font-mono text-[10px] uppercase text-slate-500 tracking-wider">Malha Nacional
-                                    Ativa</span>
+                        class="absolute top-0 left-0 right-0 z-[1000] p-4 flex justify-between items-start pointer-events-none">
+
+                        <!-- Botão Toggle da Malha -->
+                        <button onclick="toggleMalhaOficial()"
+                            class="pointer-events-auto inline-flex items-center gap-3 px-4 py-1.5 rounded-full bg-white border border-slate-200 shadow-sm hover:bg-slate-50 transition-colors cursor-pointer group">
+                            <div class="flex items-center gap-2">
+                                <div id="ui-toggle-luz" class="w-2 h-2 rounded-full bg-emerald-500 transition-colors"></div>
+                                <span id="ui-toggle-texto"
+                                    class="font-mono text-[10px] uppercase text-slate-700 font-bold tracking-wider group-hover:text-slate-900">Malha
+                                    Nacional Ativa</span>
                             </div>
+                        </button>
+
+                        <!-- Botão Importar GeoJSON -->
+                        <div class="pointer-events-auto">
+                            <input type="file" id="input-geojson" accept=".geojson,application/geo+json,.json"
+                                class="hidden" onchange="carregarMalhaPersonalizada(event)">
+                            <label for="input-geojson"
+                                class="cursor-pointer inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-slate-900 text-white text-xs font-bold shadow-md hover:bg-slate-800 transition-colors">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path>
+                                </svg>
+                                Importar Malha
+                            </label>
                         </div>
                     </div>
 
@@ -359,14 +376,14 @@
     <script>
         // --- LÓGICA DO MAPA E API --
         const map = L.map('map', { zoomControl: false }).setView([-15.78, -47.92], 4);
-        L.control.zoom({ position: 'topright' }).addTo(map);
+        L.control.zoom({ position: 'bottomleft' }).addTo(map);
 
         L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Light_Gray_Base/MapServer/tile/{z}/{y}/{x}', {
             attribution: 'Tiles &copy; Esri &mdash; Esri',
             maxZoom: 16
         }).addTo(map);
 
-        const state = { pontos: [], nomes: [], tipoOrigem: null, camadaRota: null, camadaTerminais: null, isProcessando: false, ultimoData: null };
+        const state = { pontos: [], nomes: [], tipoOrigem: null, camadaRota: null, camadaTerminais: null, camadaMalha: null, malhaVisivel: true, isProcessando: false, ultimoData: null };
 
         // Paleta de concessionárias para o Leaflet
         const coresMalha = {
@@ -484,7 +501,8 @@
             try {
                 fetch('/api/malha').then(r => r.json()).then(data => {
                     if (!data || !data.features) return;
-                    L.geoJSON(data, {
+                    // guarda a malha na variavel state.camadaMalha
+                    state.camadaMalha = L.geoJSON(data, {
                         style: (f) => ({
                             color: coresMalha[f.properties.concessionaria?.toUpperCase()] || coresMalha.DEFAULT,
                             weight: 3.5,
@@ -770,5 +788,81 @@
             container.className = "absolute bottom-8 left-1/2 -translate-x-1/2 z-[1000] px-5 py-2.5 rounded-full bg-white border border-slate-200 shadow-md transition-all duration-300 text-center";
             document.getElementById('texto-instrucao').innerHTML = `Clique em um terminal de <strong class="text-slate-900">ORIGEM</strong> para iniciar`;
         }
+
+        // --- IMPORTAÇÃO DE GEOJSON PERSONALIZADO ---
+        let camadaPlaneada = null;
+
+        function toggleMalhaOficial() {
+            // Se a malha ainda não carregou, não faz nada
+            if (!state.camadaMalha || !state.camadaTerminais) return;
+
+            const luz = document.getElementById('ui-toggle-luz');
+            const texto = document.getElementById('ui-toggle-texto');
+
+            if (state.malhaVisivel) {
+                // Esconde as linhas e os terminais
+                map.removeLayer(state.camadaMalha);
+                map.removeLayer(state.camadaTerminais);
+                state.malhaVisivel = false;
+
+                // Atualiza o botão visualmente (Fica Cinzento)
+                luz.classList.replace('bg-emerald-500', 'bg-slate-300');
+                texto.innerText = "Malha Nacional Oculta";
+            } else {
+                // Mostra novamente
+                state.camadaMalha.addTo(map);
+                state.camadaTerminais.addTo(map);
+                state.malhaVisivel = true;
+
+                // Atualiza o botão visualmente (Fica Verde)
+                luz.classList.replace('bg-slate-300', 'bg-emerald-500');
+                texto.innerText = "Malha Nacional Ativa";
+            }
+        }
+
+        function carregarMalhaPersonalizada(event) {
+            const ficheiro = event.target.files[0];
+            if (!ficheiro) return;
+
+            const reader = new FileReader();
+
+            reader.onload = function (e) {
+                try {
+                    const geojsonDados = JSON.parse(e.target.result);
+
+                    // Remove a malha personalizada anterior, se o utilizador carregar outra nova
+                    if (camadaPlaneada) {
+                        map.removeLayer(camadaPlaneada);
+                    }
+
+                    // Adiciona os novos trilhos ao mapa
+                    camadaPlaneada = L.geoJSON(geojsonDados, {
+                        style: {
+                            color: '#e11d48',
+                            weight: 4,
+                            dashArray: '8, 8',
+                            lineCap: 'round',
+                            opacity: 0.9
+                        }
+                    }).addTo(map);
+
+                    // Anima a câmara automaticamente para mostrar a nova linha que foi adicionada
+                    map.fitBounds(camadaPlaneada.getBounds(), { padding: [50, 50] });
+                    document.getElementById('texto-instrucao').innerHTML = `<strong class="text-emerald-700">Malha personalizada carregada com sucesso!</strong>`;
+                    document.getElementById('instrucao-simulador').className = "absolute bottom-8 left-1/2 -translate-x-1/2 z-[1000] px-5 py-2.5 rounded-full bg-emerald-50 border border-emerald-200 shadow-md transition-all duration-300 text-center";
+
+                } catch (erro) {
+                    console.error("Erro ao ler o ficheiro:", erro);
+                    alert("Não foi possível ler este ficheiro. Confirme se é um GeoJSON válido.");
+                }
+            };
+
+            // Inicia a leitura do ficheiro
+            reader.readAsText(ficheiro);
+
+            // Limpa o input para permitir carregar o mesmo ficheiro duas vezes se necessário
+            event.target.value = '';
+        }
+
     </script>
 @endsection

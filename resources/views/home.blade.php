@@ -239,10 +239,11 @@
 
     <script>
         // Inicializa o mapa base
-        const map = L.map('map').setView([-15.7801, -47.9292], 4);
-
+        const map = L.map('map', { zoomControl: false }).setView([-15.7801, -47.9292], 4);
+        L.control.zoom({ position: 'bottomleft' }).addTo(map);
+        
         L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Light_Gray_Base/MapServer/tile/{z}/{y}/{x}', {
-            attribution: 'Tiles &copy; Esri &mdash; Esri, DeLorme, NAVTEQ',
+            attribution: 'Tiles &copy; Esri &mdash; Esri',
             maxZoom: 16
         }).addTo(map);
 
