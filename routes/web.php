@@ -3,6 +3,7 @@
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\SimController;
 use App\Http\Controllers\ProfileController;
+use App\Models\Simulacao;
 
 // --- ROTAS DAS TELAS ---
 Route::get('/', [SimController::class, 'index'])->name('home');
@@ -18,13 +19,20 @@ Route::prefix('api')->group(function () {
 
 // --- ROTAS PROTEGIDAS ---
 Route::middleware('auth')->group(function () {
-    
+
     Route::get('/simulador', [SimController::class, 'simulador'])->name('simulador');
 
-    // Dashboard original do Breeze
+    Route::post('/simulador/salvar', [SimController::class, 'salvarSimulacao'])->name('simulador.salvar');
+    Route::delete('/simulador/{id}', [SimController::class, 'excluirSimulacao'])->name('simulador.excluir');
+    
     Route::get('/dashboard', function () {
-        return view('dashboard');
-    })->middleware('verified')->name('dashboard');
+        // Puxa as simulações do banco ordenadas pelas mais recentes
+        $simulacoes = Simulacao::where('user_id', auth()->id())
+            ->latest()
+            ->get();
+
+        return view('dashboard', ['simulacoes' => $simulacoes]);
+    })->middleware(['auth', 'verified'])->name('dashboard');
 
     // Gestão de Perfil
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
@@ -32,4 +40,4 @@ Route::middleware('auth')->group(function () {
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 });
 
-require __DIR__.'/auth.php';
+require __DIR__ . '/auth.php';

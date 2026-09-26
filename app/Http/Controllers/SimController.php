@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
 use App\Models\TarifaRegulada;
+use App\Models\Simulacao;
 
 class SimController extends Controller
 {
@@ -13,8 +14,6 @@ class SimController extends Controller
     {
         // Busca notícias reais do Google News sobre ferrovias no Brasil
         $url = "https://news.google.com/rss/search?q=ferrovia+logistica+brasil&hl=pt-BR&gl=BR&ceid=BR:pt-419";
-
-        // Suprime erros caso a internet oscile (fallback) para não quebrar a home
         $xml = @simplexml_load_file($url);
 
         $noticias = [];
@@ -204,4 +203,39 @@ class SimController extends Controller
             "features" => $featuresArray
         ]);
     }
+    public function salvarSimulacao(Request $request)
+    {
+        // Pega o ID do utilizador logado
+        $userId = auth()->id();
+
+        // Cria o registo no banco de dados
+        Simulacao::create([
+            'user_id' => $userId,
+            'origem' => $request->origem,
+            'destino' => $request->destino,
+            'mercadoria' => $request->mercadoria,
+            'toneladas' => $request->toneladas,
+            'distancia_km' => $request->distancia_km,
+            'custo_frete' => $request->custo_frete,
+            'economia_co2' => $request->economia_co2,
+        ]);
+
+        return response()->json(['status' => 'sucesso', 'mensagem' => 'Salvo no Dashboard!']);
+    }
+
+    public function excluirSimulacao($id)
+    {
+        // Procura a simulação pelo ID, mas garante que pertence ao utilizador logado
+        $simulacao = Simulacao::where('id', $id)
+            ->where('user_id', auth()->id())
+            ->first();
+
+        // Se existir, apaga do banco de dados
+        if ($simulacao) {
+            $simulacao->delete();
+        }
+
+        return redirect()->route('dashboard')->with('sucesso', 'Simulação excluída com sucesso!');
+    }
+
 }

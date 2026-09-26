@@ -334,10 +334,21 @@
                         <ul id="lista-percurso" class="space-y-3 py-1"></ul>
                     </div>
 
+                    <button onclick="salvarSimulacao()" id="btn-salvar"
+                        class="mt-4 w-full py-3 bg-emerald-600 text-white text-sm font-bold rounded-lg hover:bg-emerald-700 transition-colors hidden shadow-sm flex items-center justify-center gap-2">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4">
+                            </path>
+                        </svg>
+                        Salvar no Dashboard
+                    </button>
+
                     <button onclick="resetarSimulador()" id="btn-reset"
-                        class="mt-4 w-full py-3 bg-slate-900 text-white text-sm font-bold rounded-lg hover:bg-slate-800 transition-colors hidden shadow-sm">
+                        class="mt-2 w-full py-3 bg-slate-900 text-white text-sm font-bold rounded-lg hover:bg-slate-800 transition-colors hidden shadow-sm">
                         Nova Simulação
                     </button>
+
                 </div>
             </div>
         </div>
@@ -616,6 +627,7 @@
                 state.isProcessando = false;
             }
         }
+        let dadosParaSalvar = null;
 
         function desenharRota(data) {
             if (state.camadaRota) map.removeLayer(state.camadaRota);
@@ -694,6 +706,18 @@
                 document.getElementById('res-litros').innerText = Math.round(resultado.litros).toLocaleString('pt-BR') + ' L';
                 document.getElementById('res-frete').innerText = formatBRL(resultado.custoFrete);
                 document.getElementById('res-economia').innerText = formatBRL(resultado.economia);
+
+                dadosParaSalvar = {
+                    origem: state.nomes[0],
+                    destino: state.nomes[state.nomes.length - 1],
+                    mercadoria: mercadoriaEscolhida,
+                    toneladas: toneladasDigitadas,
+                    distancia_km: distanciaDaRota,
+                    custo_frete: resultado.custoFrete,
+                    economia_co2: (distanciaDaRota * toneladasDigitadas * 0.04442)
+                };
+                // botão de salvar
+                document.getElementById('btn-salvar').classList.remove('hidden');
 
             } catch (erro) {
                 console.error("Erro ao calcular frete:", erro);
@@ -783,7 +807,8 @@
             document.getElementById('dashboard-custos').classList.add('opacity-40', 'grayscale', 'pointer-events-none');
             document.getElementById('res-km').innerText = "0.0";
             document.getElementById('res-tempo').innerText = "--";
-
+            document.getElementById('btn-salvar').classList.add('hidden');
+            
             const container = document.getElementById('instrucao-simulador');
             container.className = "absolute bottom-8 left-1/2 -translate-x-1/2 z-[1000] px-5 py-2.5 rounded-full bg-white border border-slate-200 shadow-md transition-all duration-300 text-center";
             document.getElementById('texto-instrucao').innerHTML = `Clique em um terminal de <strong class="text-slate-900">ORIGEM</strong> para iniciar`;
@@ -862,6 +887,36 @@
 
             // Limpa o input para permitir carregar o mesmo ficheiro duas vezes se necessário
             event.target.value = '';
+        }
+
+        async function salvarSimulacao() {
+            if (!dadosParaSalvar) return;
+
+            const btn = document.getElementById('btn-salvar');
+            btn.innerHTML = 'Salvando...';
+            btn.disabled = true;
+
+            try {
+                const resposta = await fetch('/simulador/salvar', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                    },
+                    body: JSON.stringify(dadosParaSalvar)
+                });
+
+                const json = await resposta.json();
+
+                if (json.status === 'sucesso') {
+                    btn.innerHTML = '✔ Salvo no Dashboard!';
+                    btn.classList.replace('bg-emerald-600', 'bg-slate-800');
+                }
+            } catch (erro) {
+                console.error("Erro ao salvar:", erro);
+                btn.innerHTML = 'Erro ao salvar';
+                btn.classList.replace('bg-emerald-600', 'bg-red-600');
+            }
         }
 
     </script>
