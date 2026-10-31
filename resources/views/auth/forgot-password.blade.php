@@ -1,6 +1,6 @@
 <x-guest-layout>
     <div class="mb-4 text-sm text-gray-600">
-        {{ __('Forgot your password? No problem. Just let us know your email address and we will email you a password reset link that will allow you to choose a new one.') }}
+        {{ __('Esqueceu sua senha? Não se preocupe. Basta nos informar seu endereço de e-mail e enviaremos a você um link para redefinir a senha, que permitirá que você escolha uma nova.') }}
     </div>
 
     <!-- Session Status -->

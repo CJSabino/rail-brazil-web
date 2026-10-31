@@ -6,6 +6,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
 use App\Models\TarifaRegulada;
 use App\Models\Simulacao;
+use App\Models\TarifaFixa;
 
 class SimController extends Controller
 {
@@ -59,6 +60,23 @@ class SimController extends Controller
         $concessionaria = $request->input('concessionaria');
         $mercadoria = $request->input('mercadoria');
         $toneladas = $request->input('toneladas');
+
+        if ($request->input('modo') === 'fixa') {
+            $valor = TarifaFixa::valorPara((string) $mercadoria, auth()->id());
+
+            if ($valor === null) {
+                return response()->json(['erro' => 'Tarifa Indisponível']);
+            }
+
+            $custoFreteTotal = $valor * $toneladas;
+
+            return response()->json([
+                'sucesso' => true,
+                'custoFrete' => $custoFreteTotal,
+                'economia' => $custoFreteTotal * 0.38,
+                'litros' => (($distanciaTotal * $toneladas) / 1000) * 3.33,
+            ]);
+        }
 
         $faixas = TarifaRegulada::where('concessionaria', $concessionaria)
             ->whereRaw('LOWER(mercadoria) = ?', [strtolower($mercadoria)])
@@ -168,40 +186,62 @@ class SimController extends Controller
         return response()->json($rota);
     }
 
-    public function getMalha()
+    public function getMalha(Request $request)
     {
-        $dados = Http::withHeaders([
-            'apikey' => $this->supaKey,
-            'Authorization' => 'Bearer ' . $this->supaKey
-        ])->get($this->supaUrl . "malha_ferroviaria?select=linha,concessionaria,bitola,sentido,uf,geom")
-            ->json();
+        try {
+            $url = $this->supaUrl . "malha_ferroviaria?select=id,linha,concessionaria,bitola,sentido,uf,geom";
 
-        $featuresArray = [];
+            $response = Http::withHeaders([
+                'apikey' => $this->supaKey,
+                'Authorization' => 'Bearer ' . $this->supaKey
+            ])->get($url);
 
-        //Verifica se o Supabase devolveu um array válido antes de montar o GeoJSON
-        if (is_array($dados)) {
-            foreach ($dados as $item) {
-                if (isset($item['geom'])) {
-                    $featuresArray[] = [
-                        "type" => "Feature",
-                        "properties" => [
-                            "linha" => $item['linha'] ?? 'Sem Nome',
-                            "concessionaria" => trim($item['concessionaria'] ?? 'N/A'),
-                            "bitola" => $item['bitola'] ?? 'N/A',
-                            "sentido" => $item['sentido'] ?? 'N/A',
-                            "uf" => $item['uf'] ?? ''
-                        ],
-                        "geometry" => $item['geom']
-                    ];
+            if ($response->failed()) {
+                return response()->json([
+                    'error' => true,
+                    'message' => 'Erro ao comunicar com a API do Supabase.'
+                ], 500);
+            }
+
+            $dados = $response->json();
+            $featuresArray = [];
+
+            if (is_array($dados)) {
+                foreach ($dados as $item) {
+                    if (isset($item['geom'])) {
+                        $geom = is_string($item['geom']) ? json_decode($item['geom'], true) : $item['geom'];
+
+                        if ($geom) {
+                            $featuresArray[] = [
+                                "type" => "Feature",
+                                "properties" => [
+                                    "id" => $item['id'] ?? null,
+                                    "linha" => $item['linha'] ?? 'Sem Nome',
+                                    "concessionaria" => trim($item['concessionaria'] ?? 'N/A'),
+                                    "bitola" => $item['bitola'] ?? 'N/A',
+                                    "sentido" => trim($item['sentido'] ?? 'N/A'),
+                                    "uf" => $item['uf'] ?? ''
+                                ],
+                                "geometry" => $geom
+                            ];
+                        }
+                    }
                 }
             }
-        }
 
-        return response()->json([
-            "type" => "FeatureCollection",
-            "features" => $featuresArray
-        ]);
+            return response()->json([
+                "type" => "FeatureCollection",
+                "features" => $featuresArray
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'error' => true,
+                'message' => $e->getMessage()
+            ], 500);
+        }
     }
+
     public function salvarSimulacao(Request $request)
     {
         // Pega o ID do utilizador logado

@@ -3,6 +3,7 @@
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\SimController;
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\TarifaFixaController;
 use App\Models\Simulacao;
 
 // --- ROTAS DAS TELAS ---
@@ -24,7 +25,11 @@ Route::middleware('auth')->group(function () {
 
     Route::post('/simulador/salvar', [SimController::class, 'salvarSimulacao'])->name('simulador.salvar');
     Route::delete('/simulador/{id}', [SimController::class, 'excluirSimulacao'])->name('simulador.excluir');
-    
+
+    Route::get('/dados/tarifas-fixas', [TarifaFixaController::class, 'index']);
+    Route::put('/dados/tarifas-fixas', [TarifaFixaController::class, 'salvar']);
+    Route::delete('/dados/tarifas-fixas', [TarifaFixaController::class, 'restaurar']);
+
     Route::get('/dashboard', function () {
         $simulacoes = Simulacao::where('user_id', auth()->id())
             ->latest()

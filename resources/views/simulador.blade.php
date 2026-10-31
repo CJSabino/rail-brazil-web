@@ -130,7 +130,7 @@
                     <!-- Div do Leaflet -->
                     <div id="map" class="bg-[#e5e7eb]"></div>
 
-                    <!-- Overlay Top (Informativo e Ações) -->
+                    <!-- Overlay Top (Dentro do container, perfeitamente alinhado e clicável) -->
                     <div
                         class="absolute top-0 left-0 right-0 z-[1000] p-4 flex justify-between items-start pointer-events-none">
 
@@ -142,6 +142,20 @@
                                 <span id="ui-toggle-texto"
                                     class="font-mono text-[10px] uppercase text-slate-700 font-bold tracking-wider group-hover:text-slate-900">Malha
                                     Nacional Ativa</span>
+                            </div>
+                        </button>
+
+                        <!-- Botão Toggle Interrompidas -->
+                        <button onclick="toggleInterrompidasOficial()"
+                            class="pointer-events-auto inline-flex items-center gap-3 px-4 py-1.5 rounded-full bg-white border border-slate-200 shadow-sm hover:bg-slate-50 transition-colors cursor-pointer group">
+                            <div class="flex items-center gap-2">
+                                <!-- Luz começa cinzenta (bg-slate-300) -->
+                                <div id="ui-toggle-luz-interrompidas"
+                                    class="w-2 h-2 rounded-full bg-slate-300 transition-colors"></div>
+                                <span
+                                    class="font-mono text-[10px] uppercase text-slate-700 font-bold tracking-wider group-hover:text-slate-900">
+                                    Incluir Interrompidas
+                                </span>
                             </div>
                         </button>
 
@@ -201,12 +215,17 @@
                                 <span class="w-4 h-1 rounded-full bg-[#2563eb]"></span>
                                 <span class="text-xs font-medium text-slate-700">FTL (Transnordestina)</span>
                             </li>
+                            <li class="flex items-center gap-2 border-t border-slate-100 pt-1.5 mt-1">
+                                <span class="w-4 h-0.5 border-b-2 border-dashed border-red-600"></span>
+                                <span class="text-xs font-semibold text-red-600">Trecho Interrompido</span>
+                            </li>
                         </ul>
                     </div>
                 </div>
             </div>
 
-            <!-- PAINEL LATERAL -->
+            <!-- =============================PAINEL LATERAL============================= -->
+
             <div class="col-span-1 lg:col-span-4 flex flex-col gap-4">
 
                 <!-- SELEÇÃO DE ROTA -->
@@ -277,6 +296,18 @@
                                 <option value="Demais Produtos">Carga Geral (Demais Produtos)</option>
                             </optgroup>
                         </select>
+                    </div>
+
+                    <div class="mb-4">
+                        <label class="text-slate-500 font-semibold text-xs mb-1.5 block">Tipo de tarifa</label>
+                        <div class="grid grid-cols-2 gap-1 p-1 bg-slate-100 rounded-lg">
+                            <button type="button" id="btn-modo-regulada" onclick="definirModoTarifa('regulada')"
+                                class="px-3 py-1.5 rounded-md text-xs font-bold bg-white text-slate-900 shadow-sm">Regulada ANTT</button>
+                            <button type="button" id="btn-modo-fixa" onclick="definirModoTarifa('fixa')"
+                                class="px-3 py-1.5 rounded-md text-xs font-bold text-slate-500 hover:text-slate-700">Tarifa fixa</button>
+                        </div>
+                        <button type="button" id="btn-editar-tarifas" onclick="abrirModalTarifas()"
+                            class="hidden mt-2 text-xs font-semibold text-amber-600 hover:text-amber-700 underline">Editar minhas tarifas por carga</button>
                     </div>
 
                     <div class="mb-6">
@@ -383,8 +414,24 @@
 @endsection
 
 @section('scripts')
+    <!-- Modal: tarifas fixas por carga -->
+    <div id="modal-tarifas" class="hidden fixed inset-0 z-[2000] items-center justify-center bg-slate-900/50 p-4"
+        onclick="if (event.target === this) fecharModalTarifas()">
+        <div class="bg-white rounded-2xl shadow-xl w-full max-w-lg max-h-[85vh] flex flex-col">
+            <div class="px-6 py-4 border-b border-slate-100 flex items-start justify-between gap-4">
+                <div>
+                    <h3 class="font-bold text-slate-800">Minhas tarifas fixas</h3>
+                    <p class="text-xs text-slate-500 mt-0.5">Valor em R$ por tonelada, igual para todas as concessionárias. As alterações valem só para a sua conta.</p>
+                </div>
+                <button type="button" onclick="fecharModalTarifas()" class="text-slate-400 hover:text-slate-700 text-lg leading-none" aria-label="Fechar">&times;</button>
+            </div>
+            <div id="lista-tarifas" class="overflow-y-auto px-6 py-4 space-y-2"></div>
+        </div>
+    </div>
+
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script>
+
         // --- LÓGICA DO MAPA E API --
         const map = L.map('map', { zoomControl: false }).setView([-15.78, -47.92], 4);
         L.control.zoom({ position: 'bottomleft' }).addTo(map);
@@ -398,31 +445,23 @@
 
         // Paleta de concessionárias para o Leaflet
         const coresMalha = {
-            // Rumo )
-            'RMP': '#d97706', // amber-600 
-            'RMS': '#ea580c', // orange-600
-            'RMN': '#c2410c', // orange-700
-            'RMO': '#9a3412', // orange-800
-            'RMC': '#b45309', // amber-700
-
-            // Vale
-            'EFC': '#dc2626', // red-600
-            'EFVM': '#991b1b', // red-800
-
-            // VLI 
-            'FCA': '#7c3aed', // violet-600
-            'FNS': '#4338ca', // indigo-700
-
-            // Independentes 
-            'MRS': '#059669', // emerald-600
-            'FTL': '#2563eb', // blue-600
-            'FTC': '#0891b2', // cyan-600
-            'EFPO': '#65a30d', // lime-600
-
-            'DEFAULT': '#475569' // slate-600
+            'RMP': '#d97706',
+            'RMS': '#ea580c',
+            'RMN': '#c2410c',
+            'RMO': '#9a3412',
+            'RMC': '#b45309',
+            'EFC': '#dc2626',
+            'EFVM': '#991b1b',
+            'FCA': '#7c3aed',
+            'FNS': '#4338ca',
+            'MRS': '#059669',
+            'FTL': '#2563eb',
+            'FTC': '#0891b2',
+            'EFPO': '#65a30d',
+            'DEFAULT': '#475569'
         };
 
-        // Dicionário centralizado de categorias
+        // Dicionário centralizado de cargas
         const DICIONARIO_CARGAS = {
             "Açúcar": ["AÇÚCAR", "ACUCAR"],
             "Milho": ["MILHO"],
@@ -435,118 +474,146 @@
             "Calcário Siderúrgico": ["CALCÁRIO", "CALCARIO"],
             "Cimento, Cal e Clínquer": ["CIMENTO", "CLÍNQUER", "CLINQUER", "CAL"],
             "Contêiner Cheio de 20 pés": ["CONTAINER", "CONTÊINER", "CONTEINER", "CNTR"],
-            // TUDO que for minério, siderurgia, madeira ou fertilizante que não tem tarifa específica, cai na regra geral:
             "Demais Produtos": ["MINÉRIO", "MINERIO", "SIDERÚRGICO", "SIDERURGICO", "AREIA", "BAUXITA", "CELULOSE", "MADEIRA", "FERTILIZANTE", "FOSFATO", "SAL", "UREIA", "SUCATA", "BOBINA", "VERGALHÃO", "ENXOFRE"]
         };
 
-        //Função de categorização direta
         function categorizarTerminal(tipoBruto) {
             if (!tipoBruto) return "Demais Produtos";
             const termo = tipoBruto.toUpperCase();
-
-            // Procura a palavra-chave. Se achar, retorna exatamente o nome do Option do Select
             for (const [categoria_antt, palavrasChave] of Object.entries(DICIONARIO_CARGAS)) {
                 if (palavrasChave.some(palavra => termo.includes(palavra))) {
                     return categoria_antt;
                 }
             }
-            return "Demais Produtos"; // Fallback seguro
+            return "Demais Produtos";
         }
 
-        // Auto-selecionar no painel sem intermediários
         function autoSelecionarCarga(tipoBruto) {
             const cargaExata = categorizarTerminal(tipoBruto);
             const selectCarga = document.getElementById('input-tipo-carga');
-
             if (cargaExata && selectCarga) {
                 selectCarga.value = cargaExata;
-                // Força o frontend a recalcular o frete
                 selectCarga.dispatchEvent(new Event('change'));
             }
         }
 
         function gerarTagsCarga(tipoBruto) {
             if (!tipoBruto || tipoBruto.trim() === '') return '<span class="text-xs text-slate-500 font-medium">Carga Geral</span>';
-
-            // Separa os nomes misturados
             const tipos = tipoBruto.split(/[,/]+/).map(t => t.trim()).filter(t => t.length > 0 && t.length <= 25);
-
             let html = '<span class="text-[11px] text-slate-400 mr-1.5 flex flex-wrap gap-1 items-center">Aceita: ';
-
-            tipos.slice(0, 3).forEach(t => { // Limita a 3 tags para não quebrar o layout
+            tipos.slice(0, 3).forEach(t => {
                 let cor = 'text-slate-500 bg-slate-100';
                 const up = t.toUpperCase();
-
                 if (up.includes('SOJA') || up.includes('GRÃO') || up.includes('MILHO')) cor = 'text-lime-700 bg-lime-100';
                 else if (up.includes('AÇÚCAR') || up.includes('ACUCAR')) cor = 'text-amber-700 bg-amber-100';
                 else if (up.includes('DIESEL') || up.includes('S10') || up.includes('GASOLINA')) cor = 'text-orange-700 bg-orange-100';
                 else if (up.includes('MINÉR') || up.includes('FERRO')) cor = 'text-slate-700 bg-slate-200';
                 else if (up.includes('CONT') || up.includes('CNTR')) cor = 'text-blue-700 bg-blue-100';
-
                 html += `<span class="px-1.5 py-0.5 rounded ${cor} font-bold text-[10px] uppercase">${t}</span>`;
             });
-
             html += '</span>';
             return html;
         }
 
-        // Filtro de Mapa
-        function filtrarTerminaisCompativeis(tipoOrigem, layerOrigem) {
-            state.camadaTerminais.eachLayer(layer => {
-                if (layer === layerOrigem) return;
+        // Função de Estilo com Tracejado Vermelho para Interrompidos
+        // Começa como falso (os troços interrompidos aparecem normais e contínuos, sem vazios e sem vermelho)
+        let exibirTracejadas = false;
 
-                // Pega a coluna correta do seu CSV/Banco
-                const tipoDestino = layer.feature.properties.Tipo || layer.feature.properties.tipo || layer.feature.properties.TIPO || "Desconhecido";
+        function obterEstiloLinha(feature) {
+            const sentido = String(feature.properties.sentido || '').trim().toUpperCase();
+            const concessionaria = feature.properties.concessionaria || '';
 
-                // Se a origem e o destino caírem na mesma categoria do seu Select, eles são compatíveis
-                if (categorizarTerminal(tipoDestino) === categorizarTerminal(tipoOrigem)) {
-                    layer.setStyle({ fillColor: "#fde047", color: "#0f172a", weight: 2, radius: 7, opacity: 1, fillOpacity: 1 });
-                    layer.bringToFront();
-                } else {
-                    layer.setStyle({ fillColor: "#f1f5f9", color: "#cbd5e1", weight: 1, radius: 4, opacity: 0.4, fillOpacity: 0.4 });
-                }
-            });
+            // Se for interrompido E o utilizador tiver ativado o botão, mostra a tracejada vermelha
+            if (sentido === 'INTERROMPIDO' && exibirTracejadas) {
+                return {
+                    color: '#dc2626',
+                    weight: 3,
+                    dashArray: '6, 6',
+                    opacity: 0.8
+                };
+            }
+
+            // Caso contrário, pinta normalmente como uma linha operacional contínua
+            let corConcessionaria = '#2563eb';
+            const upConc = concessionaria.toUpperCase();
+            if (upConc.includes('RUMO')) {
+                corConcessionaria = '#f59e0b';
+            } else if (upConc.includes('VALE') || upConc.includes('EFC')) {
+                corConcessionaria = '#dc2626';
+            } else if (upConc.includes('VLI') || upConc.includes('FCA')) {
+                corConcessionaria = '#8b5cf6';
+            } else if (upConc.includes('MRS')) {
+                corConcessionaria = '#10b981';
+            } else {
+                corConcessionaria = coresMalha[upConc] || coresMalha.DEFAULT;
+            }
+
+            // dashArray: null é obrigatório: o setStyle do Leaflet mescla as opções,
+            // então sem isso o tracejado anterior permanece na linha.
+            return {
+                color: corConcessionaria,
+                weight: 4,
+                opacity: 0.9,
+                dashArray: null
+            };
+        }
+
+        function toggleInterrompidasOficial() {
+            exibirTracejadas = !exibirTracejadas;
+            const luz = document.getElementById('ui-toggle-luz-interrompidas');
+
+            if (exibirTracejadas) {
+                luz.className = "w-2 h-2 rounded-full bg-red-600 transition-colors";
+            } else {
+                luz.className = "w-2 h-2 rounded-full bg-slate-300 transition-colors";
+            }
+
+            // Atualiza o estilo instantaneamente na camada existente no mapa (sem recarregar dados)
+            if (state.camadaMalha) {
+                state.camadaMalha.setStyle(obterEstiloLinha);
+            }
+        }
+
+        function carregarJson(url) {
+            return fetch(url)
+                .then(r => r.json())
+                .catch(err => { console.error("Erro ao carregar " + url, err); return null; });
         }
 
         async function inicializarCamadas() {
-            try {
-                fetch('/dados/malha').then(r => r.json()).then(data => {
-                    if (!data || !data.features) return;
-                    // guarda a malha na variavel state.camadaMalha
-                    state.camadaMalha = L.geoJSON(data, {
-                        style: (f) => ({
-                            color: coresMalha[f.properties.concessionaria?.toUpperCase()] || coresMalha.DEFAULT,
-                            weight: 3.5,
-                            opacity: 0.9,
-                            lineCap: 'round'
-                        })
-                    }).addTo(map);
-                });
+            // Dispara os dois pedidos em paralelo, mas adiciona na ordem certa:
+            // primeiro a malha e depois os terminais, para os pontos ficarem por cima das linhas.
+            const pedidoMalha = carregarJson('/dados/malha');
+            const pedidoTerminais = carregarJson('/dados/terminais');
 
-                fetch('/dados/terminais').then(r => r.json()).then(data => {
-                    if (!data || !data.features) return;
-                    state.camadaTerminais = L.geoJSON(data, {
-                        pointToLayer: (f, latlng) => L.circleMarker(latlng, { radius: 5, fillColor: "#64748b", color: "#ffffff", weight: 1.5, fillOpacity: 1 }),
-                        onEachFeature: (f, layer) => {
-                            const nome = f.properties.Terminal || f.properties.terminal || "Terminal Desconhecido";
-                            const tipoBruto = f.properties.Tipo || f.properties.tipo || f.properties.TIPO;
-                            const tipo = tipoBruto || "Geral";
+            const malha = await pedidoMalha;
+            if (malha && malha.features) {
+                state.camadaMalha = L.geoJSON(malha, { style: obterEstiloLinha }).addTo(map);
+            }
 
-                            const tooltipContent = `<div style="text-align: center;"><span style="font-size: 12px; font-weight: bold; color: #0f172a;">${nome}</span><br><span style="font-size: 10px; color: #64748b; text-transform: uppercase;">📦 ${tipo}</span></div>`;
+            const terminais = await pedidoTerminais;
+            if (terminais && terminais.features) {
+                state.camadaTerminais = L.geoJSON(terminais, {
+                    pointToLayer: (f, latlng) => L.circleMarker(latlng, { radius: 5, fillColor: "#64748b", color: "#ffffff", weight: 1.5, fillOpacity: 1 }),
+                    onEachFeature: (f, layer) => {
+                        const nome = f.properties.Terminal || f.properties.terminal || "Terminal Desconhecido";
+                        const tipoBruto = f.properties.Tipo || f.properties.tipo || f.properties.TIPO;
+                        const tipo = tipoBruto || "Geral";
+                        const tooltipContent = `<div style="text-align: center;"><span style="font-size: 12px; font-weight: bold; color: #0f172a;">${nome}</span><br><span style="font-size: 10px; color: #64748b; text-transform: uppercase;">📦 ${tipo}</span></div>`;
 
-                            layer.bindTooltip(tooltipContent, { className: 'custom-tooltip', direction: 'top', offset: [0, -8] });
-                            layer.on('click', (e) => {
-                                L.DomEvent.stopPropagation(e);
-                                if (layer.options.fillColor === '#cbd5e1') return;
-                                if (!state.isProcessando) gerenciarSelecao(e.latlng, nome, layer, tipo);
-                            });
-                        }
-                    }).addTo(map);
-                });
-            } catch (error) { console.error("Erro fatal:", error); }
+                        layer.bindTooltip(tooltipContent, { className: 'custom-tooltip', direction: 'top', offset: [0, -8] });
+                        layer.on('click', (e) => {
+                            L.DomEvent.stopPropagation(e);
+                            if (layer.options.fillColor === '#cbd5e1') return;
+                            if (!state.isProcessando) gerenciarSelecao(e.latlng, nome, layer, tipo);
+                        });
+                    }
+                }).addTo(map);
+            }
         }
 
         inicializarCamadas();
+
 
         function gerenciarSelecao(latlng, nome, layer, tipo) {
             if (state.pontos.length >= 2) resetarSimulador();
@@ -556,19 +623,15 @@
             if (state.pontos.length === 1) {
                 layer.setStyle({ fillColor: '#0f172a', radius: 8, weight: 2 });
                 layer.bringToFront();
-                //filtrarTerminaisCompativeis(tipo, layer);
                 autoSelecionarCarga(tipo);
 
-                //Atualiza a Origem na tela
                 document.getElementById('ui-origem-nome').innerText = nome;
                 document.getElementById('ui-origem-cargas').innerHTML = gerarTagsCarga(tipo);
-
             } else {
                 layer.setStyle({ fillColor: '#10b981', radius: 8, weight: 2 });
                 layer.bringToFront();
                 executarSimulacao();
 
-                //Atualiza o Destino na tela
                 document.getElementById('ui-destino-nome').innerText = nome;
                 document.getElementById('ui-destino-cargas').innerHTML = gerarTagsCarga(tipo);
             }
@@ -627,6 +690,7 @@
                 state.isProcessando = false;
             }
         }
+
         let dadosParaSalvar = null;
 
         function desenharRota(data) {
@@ -672,6 +736,125 @@
             return transbordos;
         }
 
+        // --- TARIFA FIXA (por usuário) ---
+        let modoTarifa = 'regulada';
+        let tarifasFixas = [];
+
+        function cabecalhosJson() {
+            return {
+                'Content-Type': 'application/json',
+                'Accept': 'application/json',
+                'X-CSRF-TOKEN': '{{ csrf_token() }}'
+            };
+        }
+
+        function definirModoTarifa(modo) {
+            modoTarifa = modo;
+            const ativo = 'px-3 py-1.5 rounded-md text-xs font-bold bg-white text-slate-900 shadow-sm';
+            const inativo = 'px-3 py-1.5 rounded-md text-xs font-bold text-slate-500 hover:text-slate-700';
+            document.getElementById('btn-modo-regulada').className = modo === 'regulada' ? ativo : inativo;
+            document.getElementById('btn-modo-fixa').className = modo === 'fixa' ? ativo : inativo;
+            document.getElementById('btn-editar-tarifas').classList.toggle('hidden', modo !== 'fixa');
+            seRotaProntaRecalcular();
+        }
+
+        async function abrirModalTarifas() {
+            const modal = document.getElementById('modal-tarifas');
+            const lista = document.getElementById('lista-tarifas');
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+            lista.innerHTML = '<p class="text-sm text-slate-400">Carregando...</p>';
+
+            try {
+                const r = await fetch('/dados/tarifas-fixas', { headers: { 'Accept': 'application/json' } });
+                if (!r.ok) throw new Error(r.status);
+                tarifasFixas = await r.json();
+                renderizarTarifas();
+            } catch (erro) {
+                console.error('Erro ao carregar tarifas fixas:', erro);
+                lista.innerHTML = '<p class="text-sm text-red-500">Não foi possível carregar as tarifas.</p>';
+            }
+        }
+
+        function fecharModalTarifas() {
+            const modal = document.getElementById('modal-tarifas');
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+            if (modoTarifa === 'fixa') seRotaProntaRecalcular();
+        }
+
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape' && !document.getElementById('modal-tarifas').classList.contains('hidden')) {
+                fecharModalTarifas();
+            }
+        });
+
+        function renderizarTarifas() {
+            const lista = document.getElementById('lista-tarifas');
+            lista.innerHTML = '';
+
+            tarifasFixas.forEach((t, i) => {
+                const linha = document.createElement('div');
+                linha.className = 'flex items-center gap-2';
+                linha.innerHTML = `
+                    <span class="flex-1 text-sm text-slate-700">${t.mercadoria}</span>
+                    <span class="text-xs text-slate-400">R$/t</span>
+                    <input type="number" min="0" step="0.01" inputmode="decimal" placeholder="—"
+                        value="${t.valor ?? ''}" onchange="salvarTarifaFixa(${i}, this)"
+                        class="w-28 bg-slate-50 border border-slate-200 rounded-lg px-2 py-1.5 text-sm text-slate-800 text-right focus:ring-2 focus:ring-amber-500 outline-none">
+                    <button type="button" onclick="restaurarTarifaFixa(${i})" title="Voltar ao valor padrão"
+                        class="btn-restaurar ${t.personalizada ? '' : 'invisible'} text-[10px] font-bold uppercase text-slate-500 hover:text-slate-800">Restaurar</button>`;
+                lista.appendChild(linha);
+            });
+        }
+
+        async function salvarTarifaFixa(i, input) {
+            const t = tarifasFixas[i];
+            const valor = parseFloat(input.value);
+
+            if (isNaN(valor) || valor < 0) {
+                input.value = t.valor ?? '';
+                return;
+            }
+
+            input.disabled = true;
+            try {
+                const r = await fetch('/dados/tarifas-fixas', {
+                    method: 'PUT',
+                    headers: cabecalhosJson(),
+                    body: JSON.stringify({ mercadoria: t.mercadoria, valor: valor })
+                });
+                if (!r.ok) throw new Error(r.status);
+                t.valor = valor;
+                t.personalizada = true;
+                input.closest('div').querySelector('.btn-restaurar').classList.remove('invisible');
+            } catch (erro) {
+                console.error('Erro ao salvar tarifa fixa:', erro);
+                input.value = t.valor ?? '';
+                alert('Não foi possível salvar a tarifa.');
+            } finally {
+                input.disabled = false;
+            }
+        }
+
+        async function restaurarTarifaFixa(i) {
+            const t = tarifasFixas[i];
+            try {
+                const r = await fetch('/dados/tarifas-fixas', {
+                    method: 'DELETE',
+                    headers: cabecalhosJson(),
+                    body: JSON.stringify({ mercadoria: t.mercadoria })
+                });
+                if (!r.ok) throw new Error(r.status);
+                t.valor = t.padrao;
+                t.personalizada = false;
+                renderizarTarifas();
+            } catch (erro) {
+                console.error('Erro ao restaurar tarifa fixa:', erro);
+                alert('Não foi possível restaurar a tarifa.');
+            }
+        }
+
         function seRotaProntaRecalcular() {
             if (state.ultimoData) atualizarDashboard(state.ultimoData);
         }
@@ -681,7 +864,8 @@
                 distanciaKm: distanciaDaRota,
                 mercadoria: mercadoriaEscolhida,
                 toneladas: toneladasDigitadas,
-                concessionaria: concessionariaDoTrecho
+                concessionaria: concessionariaDoTrecho,
+                modo: modoTarifa
             };
 
             try {
@@ -695,9 +879,8 @@
                 });
 
                 const resultado = await resposta.json();
-
                 if (resultado.erro) {
-                    document.getElementById('res-frete').innerText = "Indisponível";
+                    document.getElementById('res-frete').innerText = (modoTarifa === 'fixa') ? "Defina a tarifa" : "Indisponível";
                     return;
                 }
 
@@ -716,7 +899,6 @@
                     custo_frete: resultado.custoFrete,
                     economia_co2: (distanciaDaRota * toneladasDigitadas * 0.04442)
                 };
-                // botão de salvar
                 document.getElementById('btn-salvar').classList.remove('hidden');
 
             } catch (erro) {
@@ -736,7 +918,6 @@
 
             const transbordos = verificarTransbordos(data.features);
             const penalidadeTempo = transbordos * 24;
-
             const tku = dist * tu;
             const tempoTotal = (dist / 35) + penalidadeTempo;
 
@@ -808,38 +989,30 @@
             document.getElementById('res-km').innerText = "0.0";
             document.getElementById('res-tempo').innerText = "--";
             document.getElementById('btn-salvar').classList.add('hidden');
-            
+
             const container = document.getElementById('instrucao-simulador');
             container.className = "absolute bottom-8 left-1/2 -translate-x-1/2 z-[1000] px-5 py-2.5 rounded-full bg-white border border-slate-200 shadow-md transition-all duration-300 text-center";
             document.getElementById('texto-instrucao').innerHTML = `Clique em um terminal de <strong class="text-slate-900">ORIGEM</strong> para iniciar`;
         }
 
-        // --- IMPORTAÇÃO DE GEOJSON PERSONALIZADO ---
         let camadaPlaneada = null;
 
         function toggleMalhaOficial() {
-            // Se a malha ainda não carregou, não faz nada
             if (!state.camadaMalha || !state.camadaTerminais) return;
 
             const luz = document.getElementById('ui-toggle-luz');
             const texto = document.getElementById('ui-toggle-texto');
 
             if (state.malhaVisivel) {
-                // Esconde as linhas e os terminais
                 map.removeLayer(state.camadaMalha);
                 map.removeLayer(state.camadaTerminais);
                 state.malhaVisivel = false;
-
-                // Atualiza o botão visualmente (Fica Cinzento)
                 luz.classList.replace('bg-emerald-500', 'bg-slate-300');
                 texto.innerText = "Malha Nacional Oculta";
             } else {
-                // Mostra novamente
                 state.camadaMalha.addTo(map);
                 state.camadaTerminais.addTo(map);
                 state.malhaVisivel = true;
-
-                // Atualiza o botão visualmente (Fica Verde)
                 luz.classList.replace('bg-slate-300', 'bg-emerald-500');
                 texto.innerText = "Malha Nacional Ativa";
             }
@@ -848,19 +1021,13 @@
         function carregarMalhaPersonalizada(event) {
             const ficheiro = event.target.files[0];
             if (!ficheiro) return;
-
             const reader = new FileReader();
 
             reader.onload = function (e) {
                 try {
                     const geojsonDados = JSON.parse(e.target.result);
+                    if (camadaPlaneada) map.removeLayer(camadaPlaneada);
 
-                    // Remove a malha personalizada anterior, se o utilizador carregar outra nova
-                    if (camadaPlaneada) {
-                        map.removeLayer(camadaPlaneada);
-                    }
-
-                    // Adiciona os novos trilhos ao mapa
                     camadaPlaneada = L.geoJSON(geojsonDados, {
                         style: {
                             color: '#e11d48',
@@ -871,27 +1038,20 @@
                         }
                     }).addTo(map);
 
-                    // Anima a câmara automaticamente para mostrar a nova linha que foi adicionada
                     map.fitBounds(camadaPlaneada.getBounds(), { padding: [50, 50] });
                     document.getElementById('texto-instrucao').innerHTML = `<strong class="text-emerald-700">Malha personalizada carregada com sucesso!</strong>`;
                     document.getElementById('instrucao-simulador').className = "absolute bottom-8 left-1/2 -translate-x-1/2 z-[1000] px-5 py-2.5 rounded-full bg-emerald-50 border border-emerald-200 shadow-md transition-all duration-300 text-center";
-
                 } catch (erro) {
                     console.error("Erro ao ler o ficheiro:", erro);
                     alert("Não foi possível ler este ficheiro. Confirme se é um GeoJSON válido.");
                 }
             };
-
-            // Inicia a leitura do ficheiro
             reader.readAsText(ficheiro);
-
-            // Limpa o input para permitir carregar o mesmo ficheiro duas vezes se necessário
             event.target.value = '';
         }
 
         async function salvarSimulacao() {
             if (!dadosParaSalvar) return;
-
             const btn = document.getElementById('btn-salvar');
             btn.innerHTML = 'Salvando...';
             btn.disabled = true;
@@ -907,9 +1067,8 @@
                 });
 
                 const json = await resposta.json();
-
                 if (json.status === 'sucesso') {
-                    btn.innerHTML = '✔ Salvo no Dashboard!';
+                    btn.innerHTML = 'Salvo no Dashboard!';
                     btn.classList.replace('bg-emerald-600', 'bg-slate-800');
                 }
             } catch (erro) {
